@@ -444,6 +444,28 @@ footer .copy{margin-top:1.2rem;opacity:.6}
 .sticky-cta .btn{padding:.85rem 1.3rem;font-size:.86rem}
 @media(max-width:860px){.sticky-cta{display:flex}}
 
+/* ===================== DOWNSELL MODAL ===================== */
+.modal{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:5vw;
+  background:rgba(6,24,58,.72);backdrop-filter:blur(4px)}
+.modal.open{display:flex}
+.modal-card{position:relative;background:#fff;border-radius:24px;max-width:440px;width:100%;
+  padding:2.4rem 1.8rem 1.8rem;text-align:center;box-shadow:var(--shadow);animation:pop .28s ease}
+@keyframes pop{from{transform:translateY(16px) scale(.96);opacity:0}to{transform:none;opacity:1}}
+.modal-x{position:absolute;top:.6rem;right:.9rem;background:none;border:none;font-size:1.9rem;line-height:1;
+  color:var(--muted);cursor:pointer}
+.ds-eyebrow{font-family:'Archivo',sans-serif;font-weight:900;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--orange);font-size:.82rem;margin-bottom:.5rem}
+.modal-card h3{font-size:1.5rem;line-height:1.12;margin-bottom:.7rem}
+.ds-sub{color:var(--muted);font-size:.94rem;margin-bottom:.6rem}
+.ds-price{margin:1.1rem 0 1.4rem}
+.ds-old{color:var(--muted);text-decoration:line-through;font-size:1rem;display:block}
+.ds-now{font-family:'Anton',sans-serif;font-size:3.2rem;color:var(--ink);line-height:.9;display:block}
+.ds-now small{font-size:1.2rem;vertical-align:top;margin-right:.15rem}
+.ds-save{display:inline-block;margin-top:.55rem;background:rgba(255,90,31,.12);color:var(--orange);
+  font-weight:800;font-size:.82rem;padding:.3rem .8rem;border-radius:999px}
+.ds-decline{margin-top:.9rem;background:none;border:none;color:var(--muted);font-size:.85rem;cursor:pointer;text-decoration:underline}
+@media(prefers-reduced-motion:reduce){.modal-card{animation:none}}
+
 /* ===================== REVEAL ===================== */
 .reveal{opacity:0;transform:translateY(28px);transition:opacity .6s ease,transform .6s ease}
 .reveal.in{opacity:1;transform:none}
@@ -873,13 +895,31 @@ footer .copy{margin-top:1.2rem;opacity:.6}
   <a href="#oferta" class="btn btn-primary cta" data-cta="sticky">Ver planos</a>
 </div>
 
+<!-- ===================== DOWNSELL MODAL ===================== -->
+<div class="modal" id="downsell" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="ds-title">
+    <button class="modal-x" type="button" aria-label="Fechar">×</button>
+    <p class="ds-eyebrow">⏳ Espera!</p>
+    <h3 id="ds-title">Leve o <span class="orange">Completo</span> por quase o preço do Básico</h3>
+    <p class="ds-sub">Todo o modo jogo — sorteio de times, chaveamento, placar e estatísticas — junto com os treinos. Só nesta saída:</p>
+    <div class="ds-price">
+      <span class="ds-old">de R$ 27</span>
+      <span class="ds-now"><small>R$</small>22</span>
+      <span class="ds-save">Economize R$5 no Completo</span>
+    </div>
+    <a href="#" class="btn btn-primary btn-block pulse cta-checkout" data-plan="completo_promo" data-cta="downsell">Sim, quero o Completo com desconto</a>
+    <button class="ds-decline" type="button">Não, continuar com o Básico</button>
+  </div>
+</div>
+
 <script>
 /* ================= CONFIG ================= */
 /* Links de checkout da Hotmart por plano.
    TODO: troque o link do plano "completo" pelo checkout do produto de R$27. */
 const CHECKOUT = {
-  basico:   "https://pay.hotmart.com/T106381618H?checkoutMode=10",
-  completo: "https://pay.hotmart.com/T106381618H?checkoutMode=10"
+  basico:         "https://pay.hotmart.com/T106381618H?checkoutMode=10",
+  completo:       "https://pay.hotmart.com/T106381618H?checkoutMode=10",
+  completo_promo: "https://pay.hotmart.com/T106381618H?checkoutMode=10"
 };
 
 /* ================= CHECKOUT BUTTONS ================= */
@@ -918,6 +958,31 @@ document.querySelectorAll('.qa button').forEach(btn=>{
     t.innerHTML = (major?`<span>${cm}</span>`:'<span></span>') + '<i></i>';
     r.appendChild(t);
   }
+})();
+
+/* ================= DOWNSELL EXIT-INTENT MODAL ================= */
+(function(){
+  const modal = document.getElementById('downsell');
+  if(!modal) return;
+  const KEY = 'ds_shown';
+  let shown = false;
+  const open = ()=>{
+    if(shown || sessionStorage.getItem(KEY)) return;
+    shown = true; sessionStorage.setItem(KEY,'1');
+    modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
+    try{ fbq('trackCustom','DownsellShown'); }catch(e){}
+  };
+  const close = ()=>{ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); };
+  modal.querySelector('.modal-x').addEventListener('click', close);
+  modal.querySelector('.ds-decline').addEventListener('click', close);
+  modal.addEventListener('click', e=>{ if(e.target===modal) close(); });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') close(); });
+  /* fechar ao clicar em comprar (abre em nova aba) */
+  modal.querySelector('.cta-checkout').addEventListener('click', ()=>setTimeout(close,100));
+  /* gatilho de intenção de saída no desktop */
+  document.addEventListener('mouseout', e=>{ if(e.clientY<=0 && !e.relatedTarget) open(); });
+  /* fallback: mobile/desktop após 35s na página */
+  setTimeout(open, 35000);
 })();
 
 /* ================= APP GALLERY CAROUSEL ================= */
